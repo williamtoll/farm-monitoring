@@ -4,3 +4,12 @@ node_modules/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+.env
+.DS_Store
+*.log
+
+app/*.log
+# folders
+.venv
+venv
