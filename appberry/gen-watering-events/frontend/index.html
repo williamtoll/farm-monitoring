@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Schedule Viewer</title>
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 40px;
+      }
+
+      #calendar {
+        max-width: 900px;
+        margin: 40px auto;
+      }
+
+      .form-container {
+        max-width: 500px;
+        margin: auto;
+        margin-bottom: 20px;
+      }
+
+      input,
+      select,
+      button {
+        display: block;
+        margin: 10px 0;
+        width: 100%;
+        padding: 10px;
+      }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+  </head>
+  <body>
+    <h1 style="text-align: center">Schedule Generator with FullCalendar</h1>
+
+    <div class="form-container">
+      <label for="device-select">Select Device</label>
+      <select id="device-select"></select>
+
+      <label for="start-date">Start Date</label>
+      <input type="datetime-local" id="start-date" />
+
+      <label for="duration">Duration (minutes)</label>
+      <input type="number" id="duration" min="1" value="60" />
+
+      <label for="end-date">End Date</label>
+      <input type="datetime-local" id="end-date" />
+
+      <label for="frequency">Frequency</label>
+      <select id="frequency">
+        <option value="daily">Daily</option>
+        <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
+        <option value="yearly">Yearly</option>
+      </select>
+
+      <label for="interval">Interval</label>
+      <input type="number" id="interval" min="1" value="1" />
+
+      <button id="generate-btn">Generate Schedule</button>
+    </div>
+
+    <div id="calendar"></div>
+
+    <script>
+      function formatDuration(minutes) {
+        if (minutes < 60) {
+          return `${minutes} min`; // Less than 1 hour
+        } else {
+          const hours = Math.floor(minutes / 60);
+          const remainingMinutes = minutes % 60;
+          return remainingMinutes > 0
+            ? `${hours}h ${remainingMinutes} min`
+            : `${hours}h`; // Exact hour(s)
+        }
+      }
+      async function fetchDevices() {
+        const response = await fetch("http://localhost:8000/devices");
+        const devices = await response.json();
+        const deviceSelect = document.getElementById("device-select");
+        devices.forEach((device) => {
+          const option = document.createElement("option");
+          option.value = device.id;
+          option.textContent = device.name;
+          deviceSelect.appendChild(option);
+        });
+      }
+
+      async function fetchSchedules() {
+        const response = await fetch("http://localhost:8000/schedules");
+        console.log("response", response);
+
+        const result = await response.json();
+
+        if (result.status === "success") {
+          return result.result.map((schedule) => ({
+            title: `${schedule.status} ${
+              schedule.device_name
+            } (${formatDuration(schedule.duration_minutes)})`,
+            start: schedule.start,
+            end: schedule.end,
+          }));
+        } else {
+          alert(`Error: ${result.message}. Reason: ${result.error_reason}`);
+          return [];
+        }
+      }
+
+      document
+        .getElementById("generate-btn")
+        .addEventListener("click", async () => {
+          const startDate = document.getElementById("start-date").value;
+          const endDate = document.getElementById("end-date").value;
+          const frequency = document.getElementById("frequency").value;
+          const interval = parseInt(document.getElementById("interval").value);
+          const deviceId = document.getElementById("device-select").value;
+          const duration = parseInt(document.getElementById("duration").value);
+          const payload = {
+            start_date: new Date(startDate).toISOString(),
+            end_date: endDate ? new Date(endDate).toISOString() : null,
+            duration,
+            frequency,
+            interval,
+            device_id: parseInt(deviceId),
+          };
+          console.log("payload");
+          console.dir(payload);
+          try {
+            await fetch("http://localhost:8000/generate_schedule", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+            // Reload the calendar after generating the schedule
+            loadCalendar();
+          } catch (error) {
+            console.error("Error generating schedule:", error);
+          }
+        });
+
+      async function loadCalendar() {
+        const events = await fetchSchedules();
+        const calendarEl = document.getElementById("calendar");
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+          initialView: "listWeek",
+          events: events,
+          headerToolbar: {
+            left: "prev,next today",
+            center: "title",
+            right: "listWeek,timeGridWeek,timeGridDay,dayGridMonth",
+          },
+          eventContent: function (info) {
+            // Customize how the event title is displayed
+            console.log("info");
+            console.log(info);
+            return {
+              html: `<b>${info.event.title}</b>`,
+            };
+          },
+        });
+        calendar.render();
+      }
+
+      //   document.addEventListener("DOMContentLoaded", function () {
+      //     var calendarEl = document.getElementById("calendar");
+      //     var calendar = new FullCalendar.Calendar(calendarEl, {
+      //       initialView: "listWeek",
+      //       headerToolbar: {
+      //         left: "prev,next today",
+      //         center: "title",
+      //         right: "dayGridMonth,timeGridWeek,timeGridDay",
+      //       },
+      //     });
+      //     calendar.render();
+      //   });
+
+      // Initialize everything on page load
+      window.addEventListener("DOMContentLoaded", async () => {
+        await fetchDevices();
+        loadCalendar();
+      });
+    </script>
+  </body>
+</html>
