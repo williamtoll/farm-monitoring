@@ -2,7 +2,15 @@ import psycopg2
 from datetime import datetime
 import time
 import os
-# import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO
+import logging
+
+# Configure logging
+logging.basicConfig(
+    filename='/home/pi/watering_service.log',  # Path to log file
+    level=logging.INFO,  # Log INFO level and above
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 # Database connection configuration
 DB_CONFIG = {
@@ -14,21 +22,21 @@ DB_CONFIG = {
 }
 
 # GPIO setup
-# GPIO.setmode(GPIO.BCM)  # Use Broadcom pin-numbering
-# GPIO.setwarnings(False)
+GPIO.setmode(GPIO.BCM)  # Use Broadcom pin-numbering
+GPIO.setwarnings(False)
 
 
 def start_watering(relay_port, device_id, device_name):
     """Activates the relay on the specified port."""
-    # GPIO.setup(relay_port, GPIO.OUT)
-    # GPIO.output(relay_port, GPIO.HIGH)
-    print(f"Watering started  {device_id} {device_name} on relay port {relay_port} .")
+    GPIO.setup(relay_port, GPIO.OUT)
+    GPIO.output(relay_port, GPIO.HIGH)
+    logging.info(f"Watering started  {device_id} {device_name} on relay port {relay_port} .")
 
 
 def stop_watering(relay_port, device_id, device_name):
     """Deactivates the relay on the specified port."""
-    # GPIO.output(relay_port, GPIO.LOW)
-    print(f"Watering stopped  {device_id} {device_name} on relay port {relay_port} .")
+    GPIO.output(relay_port, GPIO.LOW)
+    logging.info(f"Watering stopped  {device_id} {device_name} on relay port {relay_port} .")
 
 
 def update_status(cursor, task_id, status):
@@ -82,14 +90,14 @@ def process_tasks():
             time.sleep(10)  # Sleep for 10 seconds before next check
 
     except Exception as e:
-        print(f"Error: {e}")
+        logging.info(f"Error: {e}")
     finally:
         if conn:
             cursor.close()
             conn.close()
-        # GPIO.cleanup()
+        GPIO.cleanup()
 
 
 if __name__ == "__main__":
-    print("Starting watering service...")
+    logging.info("Starting watering service...")
     process_tasks()
