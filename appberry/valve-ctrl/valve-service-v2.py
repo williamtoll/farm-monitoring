@@ -7,9 +7,9 @@ import logging
 
 # Configure logging
 logging.basicConfig(
-    filename='/home/pi/watering_service.log',  # Path to log file
+    filename="/home/pi/watering_service.log",  # Path to log file
     level=logging.INFO,  # Log INFO level and above
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    format="%(asctime)s - %(levelname)s - %(message)s",
 )
 
 # Database connection configuration
@@ -28,15 +28,25 @@ GPIO.setwarnings(False)
 
 def start_watering(relay_port, device_id, device_name):
     """Activates the relay on the specified port."""
+    logging.info(
+        f"Try Start Watering  {device_id} {device_name} on relay port {relay_port} ."
+    )
     GPIO.setup(relay_port, GPIO.OUT)
-    GPIO.output(relay_port, GPIO.HIGH)
-    logging.info(f"Watering started  {device_id} {device_name} on relay port {relay_port} .")
+    GPIO.output(relay_port, True)
+    logging.info(
+        f"Watering started  {device_id} {device_name} on relay port {relay_port} ."
+    )
 
 
 def stop_watering(relay_port, device_id, device_name):
     """Deactivates the relay on the specified port."""
-    GPIO.output(relay_port, GPIO.LOW)
-    logging.info(f"Watering stopped  {device_id} {device_name} on relay port {relay_port} .")
+    logging.info(
+        f"Try Stop Watering  {device_id} {device_name} on relay port {relay_port} ."
+    )
+    GPIO.output(relay_port, False)
+    logging.info(
+        f"Watering stopped  {device_id} {device_name} on relay port {relay_port} ."
+    )
 
 
 def update_status(cursor, task_id, status):
@@ -86,7 +96,7 @@ def process_tasks():
                 stop_watering(relay_port, device_id, device_name)
                 update_status(cursor, task_id, "complete")
                 conn.commit()
-            
+
     except Exception as e:
         logging.info(f"Error: {e}")
     finally:
@@ -98,6 +108,6 @@ def process_tasks():
 
 if __name__ == "__main__":
     logging.info("Starting watering service...")
-    while (True):  
+    while True:
         process_tasks()
-        time.sleep(60) # Sleep for 60 seconds before next check
+        time.sleep(60)  # Sleep for 60 seconds before next check
