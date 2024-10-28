@@ -5,13 +5,14 @@ from datetime import datetime, timedelta
 from dateutil.rrule import rrule, DAILY, WEEKLY, MONTHLY, YEARLY
 import asyncpg
 from response_model import APIResponse  # Import the response model
-
+import os
 
 # PostgreSQL connection settings
-DB_HOST = "localhost"
-DB_NAME = "smart_watering"
-DB_USER = "postgres"
-DB_PASSWORD = "postgres"
+DB_USER = os.getenv("POSTGRES_USER")
+DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+DB_NAME = os.getenv("POSTGRES_DB")
+DB_HOST = os.getenv("POSTGRES_HOST")
+DB_PORT = os.getenv("POSTGRES_PORT", "5432")  # Default to 5432 if not set
 
 
 app = FastAPI()
@@ -56,7 +57,7 @@ class ScheduleResponse(BaseModel):
 async def connect_db():
     """Connect to the PostgreSQL database."""
     return await asyncpg.connect(
-        user=DB_USER, password=DB_PASSWORD, database=DB_NAME, host=DB_HOST
+        user=DB_USER, password=DB_PASSWORD, database=DB_NAME, host=DB_HOST, port=DB_PORT
     )
 
 
