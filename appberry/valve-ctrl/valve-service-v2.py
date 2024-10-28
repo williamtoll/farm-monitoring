@@ -1,15 +1,16 @@
 import psycopg2
 from datetime import datetime
 import time
+import os
 # import RPi.GPIO as GPIO
 
 # Database connection configuration
 DB_CONFIG = {
-    "dbname": "smart_watering",
-    "user": "postgres",
-    "password": "postgres",
-    "host": "localhost",
-    "port": "5432",
+    "dbname": os.getenv("POSTGRES_DB"),
+    "user": os.getenv("POSTGRES_USER"),
+    "password": os.getenv("POSTGRES_PASSWORD"),
+    "host": os.getenv("POSTGRES_HOST"),
+    "port": os.getenv("POSTGRES_PORT", "5432"),
 }
 
 # GPIO setup
@@ -66,14 +67,14 @@ def process_tasks():
                 """
                 SELECT s.id, d.relay_port,d.name as device_name,d.id as device_id FROM schedule s 
                 JOIN device d ON s.fk_device_schedule = d.id
-                WHERE s.status = 'running' AND s.end_date <= %s
+                WHERE s.status in ('running','pending') AND s.end_date <= %s
             """,
                 (now,),
             )
             running_tasks = cursor.fetchall()
 
             for task in running_tasks:
-                task_id, relay_port = task
+                task_id, relay_port, device_id, device_name = task
                 stop_watering(relay_port, device_id, device_name)
                 update_status(cursor, task_id, "complete")
                 conn.commit()
