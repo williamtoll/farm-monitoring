@@ -86,9 +86,7 @@ def process_tasks():
                 stop_watering(relay_port, device_id, device_name)
                 update_status(cursor, task_id, "complete")
                 conn.commit()
-
-            time.sleep(10)  # Sleep for 10 seconds before next check
-
+            
     except Exception as e:
         logging.info(f"Error: {e}")
     finally:
@@ -100,4 +98,6 @@ def process_tasks():
 
 if __name__ == "__main__":
     logging.info("Starting watering service...")
-    process_tasks()
+    while (True):  
+        process_tasks()
+        time.sleep(60) # Sleep for 60 seconds before next check
