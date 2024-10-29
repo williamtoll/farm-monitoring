@@ -1,6 +1,6 @@
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, Path
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 from dateutil.rrule import rrule, DAILY, WEEKLY, MONTHLY, YEARLY
 import asyncpg
@@ -61,7 +61,7 @@ async def connect_db():
     )
 
 
-@app.get("/devices", response_model=List[DeviceResponse])
+@app.get("/api/devices", response_model=List[DeviceResponse])
 async def get_devices():
     """Fetch the list of devices."""
     try:
@@ -73,13 +73,13 @@ async def get_devices():
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
-@app.get("/schedules", response_model=APIResponse)
+@app.get("/api/schedules", response_model=APIResponse)
 async def get_schedules():
     """Fetch schedules with occurrences and device information."""
     try:
         conn = await connect_db()
         query = """
-        SELECT s.start_date, s.end_date,extract(EPOCH from	(end_date - start_date)) / 60 as duration_minutes, d.name as device_name, s.status, d.id as device_id 
+        SELECT s.id, s.start_date, s.end_date,extract(EPOCH from	(end_date - start_date)) / 60 as duration_minutes, d.name as device_name, s.status, d.id as device_id 
         FROM schedule s
         JOIN device d ON s.fk_device_schedule = d.id
         where s.start_date >= CURRENT_DATE - INTERVAL '1 month'
@@ -96,6 +96,7 @@ async def get_schedules():
                 "duration_minutes": row["duration_minutes"],
                 "device_name": row["device_name"],
                 "status": row["status"],
+                "id": row["id"],
             }
             for row in rows
         ]
@@ -110,7 +111,7 @@ async def get_schedules():
         )
 
 
-@app.post("/generate_schedule", response_model=ScheduleResponse)
+@app.post("/api/generate_schedule", response_model=ScheduleResponse)
 async def generate_schedule(request: ScheduleRequest):
     """Generate recurring schedules based on input parameters."""
     if request.frequency not in FREQUENCY_MAP:
@@ -163,6 +164,35 @@ async def generate_schedule(request: ScheduleRequest):
         print(f"Database error: {str(e)}")
         return APIResponse(
             status="error", message="Failed to generate schedule.", error_reason=str(e)
+        )
+
+
+@app.delete("/api/schedules/{schedule_id}", response_model=APIResponse)
+async def delete_schedule(
+    schedule_id: int = Path(..., description="ID of the schedule to delete"),
+):
+    """Delete a schedule from the database by ID."""
+    try:
+        conn = await connect_db()
+
+        # Delete the schedule from the database
+        result = await conn.execute("DELETE FROM schedule WHERE id = $1", schedule_id)
+        await conn.close()
+
+        # Check if a row was deleted
+        if result == "DELETE 0":
+            raise HTTPException(
+                status_code=404, detail=f"Schedule with ID {schedule_id} not found"
+            )
+
+        return APIResponse(
+            status="success",
+            message="Schedule deleted successfully.",
+            result={"schedule_id": schedule_id},
+        )
+    except Exception as e:
+        return APIResponse(
+            status="error", message="Failed to delete schedule.", error_reason=str(e)
         )
 
 
