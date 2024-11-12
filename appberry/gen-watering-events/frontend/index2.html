@@ -1,0 +1,251 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Responsive Calendar</title>
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" type="text/css" href="/styles.css" />
+
+    <!-- FullCalendar Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+
+    <!-- Custom JS -->
+    <script type="module" src="/index.js"></script>
+
+    <style>
+      /* Reset margin and padding */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      /* Basic body styling */
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f5f5f5;
+        height: 100vh;
+        display: grid;
+        place-items: center;
+      }
+
+      /* Main container */
+      .container {
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        max-width: 1200px;
+        width: 90%;
+        height: 100%;
+        background-color: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      /* Header styling */
+      .header {
+        background-color: #3f51b5;
+        color: white;
+        padding: 15px;
+        text-align: center;
+      }
+
+      /* Calendar container */
+      .calendar-container {
+        display: grid;
+        grid-template-columns: 1fr;
+        padding: 10px;
+      }
+
+      /* Footer styling */
+      .footer {
+        background-color: #3f51b5;
+        color: white;
+        text-align: center;
+        padding: 10px;
+      }
+
+      /* Responsive design for larger screens */
+      @media (min-width: 768px) {
+        .container {
+          grid-template-rows: auto 1fr auto;
+          grid-template-columns: 1fr;
+        }
+
+        .calendar-container {
+          padding: 20px;
+        }
+      }
+
+      /* Responsive design for desktop */
+      @media (min-width: 1024px) {
+        .container {
+          grid-template-columns: 1fr 3fr;
+        }
+
+        .header {
+          grid-column: span 2;
+        }
+
+        .footer {
+          grid-column: span 2;
+        }
+      }
+
+      /* Container for the form */
+      .form-container {
+        padding: 15px;
+        display: grid;
+        gap: 10px;
+        background-color: #f1f1f1;
+        border-radius: 8px;
+        margin: 10px auto;
+        max-width: 500px;
+      }
+
+      /* Style the form inputs and button */
+      form {
+        display: grid;
+        gap: 10px;
+      }
+
+      input,
+      select,
+      button {
+        padding: 10px;
+        font-size: 1rem;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+
+      button {
+        background-color: #3f51b5;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background-color: #303f9f;
+      }
+
+      @media (min-width: 768px) {
+        .form-container {
+          max-width: 700px;
+        }
+      }
+    </style>
+
+    <script>
+      const API_BASE_URL = "http://localhost:8000";
+
+      document.addEventListener("DOMContentLoaded", function () {
+        let calendarEl = document.getElementById("calendar");
+
+        let calendar = new FullCalendar.Calendar(calendarEl, {
+          initialView: window.innerWidth < 768 ? "listWeek" : "listWeek",
+          headerToolbar: {
+            left: "prev,next today",
+            center: "title",
+            right:
+              window.innerWidth < 768
+                ? "listWeek"
+                : "listWeek,dayGridMonth,timeGridWeek,timeGridDay",
+          },
+          events: async function (fetchInfo, successCallback, failureCallback) {
+            try {
+              const response = await fetch(`${API_BASE_URL}/api/schedules`);
+              const result = await response.json();
+
+              if (result.status === "success") {
+                const events = result.result.map((event) => ({
+                  id: event.schedule_id,
+                  title: `${event.device_name} (${event.duration_minutes} min)`,
+                  start: event.start,
+                  end: event.end,
+                }));
+                successCallback(events);
+              } else {
+                failureCallback(result.message);
+              }
+            } catch (error) {
+              failureCallback(error.message);
+            }
+          },
+          eventClick: function (info) {
+            const eventId = info.event.id;
+
+            if (confirm(`Are you sure you want to delete this schedule?`)) {
+              deleteSchedule(eventId, info.event, calendar);
+            }
+          },
+          height: "auto",
+          nowIndicator: true,
+          editable: true,
+        });
+
+        calendar.render();
+      });
+
+      async function deleteSchedule(scheduleId, event, calendar) {
+        try {
+          const response = await fetch(
+            `${API_BASE_URL}/api/schedules/${scheduleId}`,
+            {
+              method: "DELETE",
+            }
+          );
+
+          const result = await response.json();
+
+          if (result.status === "success") {
+            alert("Schedule deleted successfully.");
+            event.remove();
+          } else {
+            alert(`Error: ${result.message}`);
+          }
+        } catch (error) {
+          alert(`Failed to delete schedule: ${error.message}`);
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <header class="header">
+        <h1>Event Calendar</h1>
+      </header>
+
+      <div class="form-container">
+        <form id="scheduleForm">
+          <label for="device">Device:</label>
+          <select id="device" name="device" required></select>
+
+          <label for="start">Start Date:</label>
+          <input type="datetime-local" id="start" name="start" required />
+
+          <label for="end">End Date:</label>
+          <input type="datetime-local" id="end" name="end" required />
+
+          <label for="duration">Duration (minutes):</label>
+          <input type="number" id="duration" name="duration" required min="1" />
+
+          <button type="submit">Create Schedule</button>
+        </form>
+      </div>
+
+      <div class="calendar-container">
+        <div id="calendar"></div>
+      </div>
+
+      <footer class="footer">
+        <p>&copy; 2024 My Calendar App</p>
+      </footer>
+    </div>
+  </body>
+</html>

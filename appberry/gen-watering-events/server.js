@@ -5,11 +5,11 @@ const app = express();
 const PORT = 3000;
 
 // Serve static files (like FullCalendar CSS and JS)
-app.use('/static', express.static(path.join(__dirname, 'frontend/static')));
+app.use('/static', express.static(path.join(__dirname, 'frontend')));
 
 // Serve the frontend HTML
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'frontend/index.html'));
+    res.sendFile(path.join(__dirname, 'frontend/index2.html'));
 });
 
 // Start the server
