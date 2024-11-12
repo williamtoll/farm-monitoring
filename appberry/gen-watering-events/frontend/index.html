@@ -5,69 +5,64 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Schedule Viewer</title>
 
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        margin: 40px;
-      }
+    <link rel="stylesheet" type="text/css" href="styles.css" />
 
-      #calendar {
-        max-width: 900px;
-        margin: 40px auto;
-      }
-
-      .form-container {
-        max-width: 500px;
-        margin: auto;
-        margin-bottom: 20px;
-      }
-
-      input,
-      select,
-      button {
-        display: block;
-        margin: 10px 0;
-        width: 100%;
-        padding: 10px;
-      }
-    </style>
+    <!-- <script type="module" src="/index.js"></script> -->
 
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
   </head>
   <body>
-    <h1 style="text-align: center">Schedule Generator with FullCalendar</h1>
+    <div class="container">
+      <header class="header">
+        <h1>Calendario de riego</h1>
+      </header>
+      <div class="form-container">
+        <form id="scheduleForm">
+          <label for="device-select">Select Device</label>
+          <select id="device-select"></select>
 
-    <div class="form-container">
-      <label for="device-select">Select Device</label>
-      <select id="device-select"></select>
+          <label for="start-date">Start Date</label>
+          <input type="date" id="start-date" required />
 
-      <label for="start-date">Start Date</label>
-      <input type="datetime-local" id="start-date" />
+          <label for="startTime">Start Time:</label>
+          <input type="time" id="startTime" name="startTime" required />
 
-      <label for="duration">Duration (minutes)</label>
-      <input type="number" id="duration" min="1" value="60" />
+          <!-- <label for="endTime">End Time:</label>
+      <input type="time" id="endTime" name="endTime" required> -->
 
-      <label for="end-date">End Date</label>
-      <input type="datetime-local" id="end-date" />
+          <label for="duration">Duration (minutes)</label>
+          <input type="number" id="duration" min="1" value="60" />
 
-      <label for="frequency">Frequency</label>
-      <select id="frequency">
-        <option value="daily">Daily</option>
-        <option value="weekly">Weekly</option>
-        <option value="monthly">Monthly</option>
-        <option value="yearly">Yearly</option>
-      </select>
+          <label for="end-date">End Date</label>
+          <input type="date" id="end-date" />
 
-      <label for="interval">Interval</label>
-      <input type="number" id="interval" min="1" value="1" />
+          <label for="frequency">Frequency</label>
+          <select id="frequency">
+            <option value="daily">Daily</option>
+            <!-- <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option> -->
+          </select>
 
-      <button id="generate-btn">Generate Schedule</button>
+          <label for="interval">Interval</label>
+          <input type="number" id="interval" min="1" value="1" />
+
+          <button id="generate-btn">Generate Schedule</button>
+        </form>
+      </div>
+
+      <div class="calendar-container">
+        <div id="calendar"></div>
+      </div>
+
+      <footer class="footer">
+        <p>&copy; 2024 Sistema de Riego Smart</p>
+      </footer>
     </div>
-
-    <div id="calendar"></div>
-
     <script>
-      const API_BASE_URL = "http://localhost:8000";
+      const API_BASE_URL = "http://localhost:8000/api";
+
+      // const API_BASE_URL = "http://192.168.0.117/api";
 
       function formatDuration(minutes) {
         if (minutes < 60) {
@@ -81,7 +76,7 @@
         }
       }
       async function fetchDevices() {
-        const response = await fetch(`${API_BASE_URL}/api/devices`);
+        const response = await fetch(`${API_BASE_URL}/devices`);
         const devices = await response.json();
         const deviceSelect = document.getElementById("device-select");
         devices.forEach((device) => {
@@ -93,7 +88,7 @@
       }
 
       async function fetchSchedules() {
-        const response = await fetch(`${API_BASE_URL}/api/schedules`);
+        const response = await fetch(`${API_BASE_URL}/schedules`);
         console.log("response", response);
 
         const result = await response.json();
@@ -122,8 +117,14 @@
           const interval = parseInt(document.getElementById("interval").value);
           const deviceId = document.getElementById("device-select").value;
           const duration = parseInt(document.getElementById("duration").value);
+          const start_time = document.getElementById("startTime").value;
+
+          const datetime = new Date(
+            `${startDate}T${start_time}:00`
+          ).toISOString();
+
           const payload = {
-            start_date: new Date(startDate).toISOString(),
+            start_date: datetime,
             end_date: endDate ? new Date(endDate).toISOString() : null,
             duration,
             frequency,
@@ -133,7 +134,7 @@
           console.log("payload");
           console.dir(payload);
           try {
-            await fetch(`${API_BASE_URL}/api/api/generate_schedule`, {
+            await fetch(`${API_BASE_URL}/generate_schedule`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(payload),
@@ -150,6 +151,9 @@
         const calendarEl = document.getElementById("calendar");
         const calendar = new FullCalendar.Calendar(calendarEl, {
           initialView: "listWeek",
+          height: "auto",
+          nowIndicator: true,
+          editable: true,
           events: events,
           headerToolbar: {
             left: "prev,next today",
@@ -172,7 +176,7 @@
       async function deleteSchedule(scheduleId) {
         try {
           const response = await fetch(
-            `${API_BASE_URL}/api/schedules/${scheduleId}`,
+            `${API_BASE_URL}/schedules/${scheduleId}`,
             {
               method: "DELETE",
             }
@@ -191,6 +195,16 @@
       }
 
       window.addEventListener("DOMContentLoaded", async () => {
+        const startInput = document.getElementById("start-date");
+        const endInput = document.getElementById("end-date");
+
+        // Get today's date in YYYY-MM-DD format
+        const today = new Date().toISOString().split("T")[0];
+
+        // Set the date input's default value to today
+        startInput.value = today;
+        endInput.value = today;
+
         await fetchDevices();
         loadCalendar();
       });

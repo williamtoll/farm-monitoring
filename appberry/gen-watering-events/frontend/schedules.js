@@ -1,4 +1,3 @@
-const API_BASE_URL = "http://localhost:8000";
 
 import API_BASE_URL from './config.js';
 
@@ -42,9 +41,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const response = await fetch(`${API_BASE_URL}/devices`);
             const result = await response.json();
+            console.log("result")
+            console.dir(result)
 
-            if (result.status === 'success') {
-                deviceSelect.innerHTML = result.result
+            if (result) {
+                deviceSelect.innerHTML = result
                     .map(device => `<option value="${device.id}">${device.name}</option>`)
                     .join('');
             } else {
@@ -66,10 +67,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     .map(schedule => `
                         <tr>
                             <td>${schedule.device_name}</td>
-                            <td>${schedule.date}</td>
-                            <td>${schedule.start_time}</td>
-                            <td>${schedule.end_time}</td>
-                            <td>${schedule.duration} min</td>
+                            <td>${schedule.start}</td>
+                            <td>${schedule.start}</td>
+                            <td>${schedule.end}</td>
+                            <td>${schedule.duration_minutes} min</td>
+                            <td>${schedule.status}</td>
+
                             <td>
                                 <button onclick="editSchedule(${schedule.id})">Edit</button>
                                 <button onclick="deleteSchedule(${schedule.id})">Delete</button>
@@ -139,9 +142,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (schedule) {
             deviceSelect.value = schedule.device_id;
             document.getElementById('date').value = schedule.date;
-            document.getElementById('startTime').value = schedule.start_time;
-            document.getElementById('endTime').value = schedule.end_time;
-            document.getElementById('duration').value = schedule.duration;
+            document.getElementById('start').value = schedule.start_time;
+            document.getElementById('end').value = schedule.end_time;
+            document.getElementById('duration_min').value = schedule.duration;
+            document.getElementById('status').value = schedule.status;
+
             editScheduleId = id;
         }
     };

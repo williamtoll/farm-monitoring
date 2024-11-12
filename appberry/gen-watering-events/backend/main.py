@@ -6,6 +6,15 @@ from dateutil.rrule import rrule, DAILY, WEEKLY, MONTHLY, YEARLY
 import asyncpg
 from response_model import APIResponse  # Import the response model
 import os
+import logging
+
+# Configure logging
+logging.basicConfig(
+    filename="backend.log",  # Path to log file
+    level=logging.INFO,  # Log INFO level and above
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
+
 
 # PostgreSQL connection settings
 DB_USER = os.getenv("POSTGRES_USER")
@@ -49,7 +58,7 @@ class ScheduleRequest(BaseModel):
 
 
 class ScheduleResponse(BaseModel):
-    occurrences: List[str] = Field(
+    occurrences: Optional [List[str]] = Field(
         ..., description="List of scheduled event occurrences as ISO 8601 strings"
     )
 
@@ -111,8 +120,10 @@ async def get_schedules():
         )
 
 
-@app.post("/api/generate_schedule", response_model=ScheduleResponse)
+@app.post("/api/generate_schedule", response_model=APIResponse)
 async def generate_schedule(request: ScheduleRequest):
+    logging.info("request")
+    logging.info(request)
     """Generate recurring schedules based on input parameters."""
     if request.frequency not in FREQUENCY_MAP:
         return {
@@ -137,8 +148,8 @@ async def generate_schedule(request: ScheduleRequest):
         end = start + timedelta(minutes=request.duration)
         occurrences.append({"start": start, "end": end})
 
-    print("ocurrences")
-    print(occurrences)
+    logging.info("ocurrences")
+    logging.info(occurrences)
 
     # Store occurrences in the PostgreSQL database
     try:
@@ -153,6 +164,8 @@ async def generate_schedule(request: ScheduleRequest):
                     timedelta(minutes=request.duration),
                 )
 
+                logging.info("inserted successfully")
+                logging.info(occ)
         await conn.close()
         # Convert occurrences to ISO 8601 strings for the response
         return APIResponse(
@@ -161,7 +174,7 @@ async def generate_schedule(request: ScheduleRequest):
             result="",
         )
     except Exception as e:
-        print(f"Database error: {str(e)}")
+        logging.info(f"Database error: {str(e)}")
         return APIResponse(
             status="error", message="Failed to generate schedule.", error_reason=str(e)
         )

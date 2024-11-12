@@ -5,7 +5,7 @@
     <title>Responsive Calendar</title>
 
     <!-- Custom Styles -->
-    <link rel="stylesheet" type="text/css" href="/styles.css" />
+    <!-- <link rel="stylesheet" type="text/css" href="/styles.css" /> -->
 
     <!-- FullCalendar Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
@@ -227,7 +227,10 @@
           <select id="device" name="device" required></select>
 
           <label for="start">Start Date:</label>
-          <input type="datetime-local" id="start" name="start" required />
+          <input type="date" id="start" name="start" required />
+
+          <label for="startTime">Start Time:</label>
+          <input type="time" id="startTime" name="startTime" required>
 
           <label for="end">End Date:</label>
           <input type="datetime-local" id="end" name="end" required />
