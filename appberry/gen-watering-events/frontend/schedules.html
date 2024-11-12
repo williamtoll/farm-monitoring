@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedule Management</title>
+    <link rel="stylesheet" href="./styles.css">
+    <script src="./schedules.js" type="module"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Manage Schedules</h1>
+        </header>
+
+        <div class="form-container">
+            <form id="scheduleForm">
+                <h2>Create / Edit Schedule</h2>
+                
+                <label for="device">Device:</label>
+                <select id="device" name="device" required></select>
+
+                <label for="date">Date:</label>
+                <input type="date" id="date" name="date" required>
+
+                <label for="startTime">Start Time:</label>
+                <input type="time" id="startTime" name="startTime" required>
+
+                <label for="endTime">End Time:</label>
+                <input type="time" id="endTime" name="endTime" required>
+
+                <label for="duration">Duration (minutes):</label>
+                <input type="number" id="duration" name="duration" min="1" required>
+
+                <button type="submit">Save Schedule</button>
+            </form>
+        </div>
+
+        <div class="schedule-table-container">
+            <h2>Existing Schedules</h2>
+            <table id="scheduleTable">
+                <thead>
+                    <tr>
+                        <th>Device</th>
+                        <th>Date</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                        <th>Duration</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <footer class="footer">
+            <p>&copy; 2024 Schedule Management</p>
+        </footer>
+    </div>
+</body>
+</html>
